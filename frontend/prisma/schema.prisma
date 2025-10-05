@@ -9,7 +9,7 @@ datasource db {
 }
 
 model Property {
-  id           Int        @id @default(autoincrement())
+  id           Int         @id @default(autoincrement())
   name         String
   address      String
   country      String
@@ -20,15 +20,15 @@ model Property {
   monthly_rent Float
   status       String
   notes        String?
-  created_at   DateTime   @default(now())
-  updated_at   DateTime   @updatedAt
-  tenants      Tenant[]
+  created_at   DateTime    @default(now())
+  updated_at   DateTime    @updatedAt
   expenses     Expense[]
   financials   Financial[]
+  tenants      Tenant[]
 }
 
 model Tenant {
-  id           Int      @id @default(autoincrement())
+  id           Int       @id @default(autoincrement())
   property_id  Int
   unit_number  String
   name         String
@@ -38,8 +38,8 @@ model Tenant {
   lease_start  DateTime
   lease_end    DateTime?
   status       String
-  property     Property @relation(fields: [property_id], references: [id])
   payments     Payment[]
+  property     Property  @relation(fields: [property_id], references: [id])
 }
 
 model Expense {

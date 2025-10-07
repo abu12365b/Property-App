@@ -60,6 +60,12 @@ const PropertyDetailsPage: React.FC<{ property: Property | null }> = ({ property
           <Detail label="📅 Created At" value={new Date(property.created_at).toLocaleString()} />
           <Detail label="⏰ Updated At" value={new Date(property.updated_at).toLocaleString()} />
         </div>
+        <Link
+          href={`/properties/${property.id}/edit`}
+          className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
+        >
+          Edit Property
+        </Link>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@
 // `PrismaClient` is used to interact with the database
 import Link from "next/link";
 import { PrismaClient } from "@prisma/client";
+import { useRouter } from "next/router";
 
 // Define the structure of a single property
 // This interface ensures that each property has an `id`, `name`, `city`, and `monthly_rent`
@@ -39,50 +40,66 @@ const PropertyRow: React.FC<{ property: Property }> = ({ property }) => (
 
 // Main page component for displaying the list of properties
 // This component receives a list of properties as a prop
-const PropertiesPage: React.FC<{ properties: Property[] }> = ({ properties }) => (
-  <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 flex flex-col items-center">
-    <div className="w-full max-w-4xl mt-10 bg-white/80 rounded-2xl shadow-2xl p-10 border border-gray-200">
-      {/* Link to go back to the sign-in page */}
-      <Link
-        href="/signin" // Navigate to the sign-in page
-        className="text-blue-500 underline mb-6 block text-lg hover:text-blue-700 transition-colors"
-      >
-        &larr; Back to Home {/* Text for the link */}
-      </Link>
+const PropertiesPage: React.FC<{ properties: Property[] }> = ({ properties }) => {
+  const router = useRouter();
 
-      {/* Title for the properties page */}
-      <div className="flex items-center gap-3 mb-8">
-        <span className="text-3xl">🏡</span> {/* Emoji for visual appeal */}
-        <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight drop-shadow-lg">
-          Properties
-        </h1>
-      </div>
+  const handleAddProperty = () => {
+    router.push("/properties/add"); // Navigate to the add property page
+  };
 
-      {/* Table to display the list of properties */}
-      <table className="min-w-full border-collapse border border-gray-200 rounded-lg overflow-hidden shadow">
-        <thead>
-          <tr className="bg-blue-100">
-            {/* Table headers */}
-            <th className="border p-4 text-left text-blue-800 font-bold text-lg">Name</th>
-            <th className="border p-4 text-left text-blue-800 font-bold text-lg">City</th>
-            <th className="border p-4 text-left text-blue-800 font-bold text-lg">Monthly Rent</th>
-          </tr>
-        </thead>
-        <tbody>
-          {/* Map through the properties array and render a `PropertyRow` for each property */}
-          {properties.map((property) => (
-            <PropertyRow key={property.id} property={property} />
-          ))}
-        </tbody>
-      </table>
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 flex flex-col items-center">
+      <div className="w-full max-w-4xl mt-10 bg-white/80 rounded-2xl shadow-2xl p-10 border border-gray-200">
+        {/* Link to go back to the sign-in page */}
+        <Link
+          href="/signin" // Navigate to the sign-in page
+          className="text-blue-500 underline mb-6 block text-lg hover:text-blue-700 transition-colors"
+        >
+          &larr; Back to Home {/* Text for the link */}
+        </Link>
 
-      {/* Footer for additional style */}
-      <div className="mt-8 text-gray-400 text-sm text-center">
-        <span role="img" aria-label="sparkles">✨</span> Manage your properties with style!
+        {/* Title for the properties page */}
+        <div className="flex items-center gap-3 mb-8">
+          <span className="text-3xl">🏡</span> {/* Emoji for visual appeal */}
+          <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight drop-shadow-lg">
+            Properties
+          </h1>
+        </div>
+
+        {/* Button to add a new property */}
+        <button
+          onClick={handleAddProperty}
+          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mb-6"
+        >
+          Add Property
+        </button>
+
+        {/* Table to display the list of properties */}
+        <table className="min-w-full border-collapse border border-gray-200 rounded-lg overflow-hidden shadow">
+          <thead>
+            <tr className="bg-blue-100">
+              {/* Table headers */}
+              <th className="border p-4 text-left text-blue-800 font-bold text-lg">Name</th>
+              <th className="border p-4 text-left text-blue-800 font-bold text-lg">City</th>
+              <th className="border p-4 text-left text-blue-800 font-bold text-lg">Monthly Rent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {/* Map through the properties array and render a `PropertyRow` for each property */}
+            {properties.map((property) => (
+              <PropertyRow key={property.id} property={property} />
+            ))}
+          </tbody>
+        </table>
+
+        {/* Footer for additional style */}
+        <div className="mt-8 text-gray-400 text-sm text-center">
+          <span role="img" aria-label="sparkles">✨</span> Manage your properties with style!
+        </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 export default PropertiesPage;
 

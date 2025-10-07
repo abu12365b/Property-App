@@ -16,12 +16,8 @@ interface Tenant {
 const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
   const router = useRouter();
 
-  // Format timestamps to `YYYY-MM-DD`
-  const formatDate = (timestamp: string | null | undefined) => {
-    if (!timestamp) return ""; // Return an empty string if the timestamp is null or undefined
-    const date = new Date(timestamp); // Convert the timestamp to a Date object
-    return date.toISOString().split("T")[0]; // Extract the `YYYY-MM-DD` portion
-  };
+  // Simplified formatDate function
+  const formatDate = (date: string | null | undefined) => date || "";
 
   // State for form fields
   const [formData, setFormData] = useState({
@@ -29,8 +25,8 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
     email: tenant.email || "",
     phone: tenant.phone || "",
     monthly_rent: tenant.monthly_rent,
-    lease_start: formatDate(tenant.lease_start), // Format lease_start
-    lease_end: formatDate(tenant.lease_end), // Format lease_end
+    lease_start: formatDate(tenant.lease_start), // Use the date directly
+    lease_end: formatDate(tenant.lease_end), // Use the date directly
     status: tenant.status,
   });
 
@@ -114,7 +110,7 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
           <input
             type="date"
             name="lease_start"
-            value={formData.lease_start} // Correctly formatted value
+            value={formData.lease_start} // Use the date directly
             onChange={handleChange}
             className="border p-2 rounded"
             required
@@ -122,7 +118,7 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
           <input
             type="date"
             name="lease_end"
-            value={formData.lease_end} // Correctly formatted value
+            value={formData.lease_end} // Use the date directly
             onChange={handleChange}
             className="border p-2 rounded"
           />

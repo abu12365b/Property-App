@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { GetServerSidePropsContext } from "next";
 
 // This is what an expense looks like (all details)
 interface Expense {
@@ -46,8 +47,8 @@ const ExpenseDetailsPage: React.FC<{ expense: Expense | null }> = ({ expense }) 
 export default ExpenseDetailsPage;
 
 // This part gets the expense details from the database before the page loads
-export async function getServerSideProps(context: any) {
-  const { id } = context.params;
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const { id } = context.params as { id: string }; // Explicitly type `params`
   const prisma = new PrismaClient();
 
   const expense = await prisma.expense.findUnique({

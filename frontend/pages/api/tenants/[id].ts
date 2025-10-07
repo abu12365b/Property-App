@@ -7,8 +7,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === "PUT") {
     const tenantId = Number(id);
 
-    console.log("Request body:", req.body); // Log the incoming data
-    console.log("Tenant ID:", tenantId); // Log the tenant ID
+    console.log("Request body:", req.body);
+    console.log("Tenant ID:", tenantId);
 
     // Validate the `id`
     if (isNaN(tenantId)) {
@@ -19,12 +19,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const requiredFields = ["name", "phone", "monthly_rent", "lease_start", "status"];
     for (const field of requiredFields) {
       if (!req.body[field]) {
-        console.error(`Missing required field: ${field}`); // Log the missing field
+        console.error(`Missing required field: ${field}`);
         return res.status(400).json({ error: `Missing required field: ${field}` });
       }
     }
 
-    // Validate the `data` object
+    // Validate allowed fields
     const allowedFields = [
       "name",
       "email",
@@ -34,11 +34,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       "lease_end",
       "status",
     ];
-    const invalidFields = Object.keys(req.body).filter((key) => !allowedFields.includes(key));
+    const invalidFields = Object.keys(req.body).filter(
+      (key) => !allowedFields.includes(key)
+    );
 
     if (invalidFields.length > 0) {
-      console.error(`Invalid fields: ${invalidFields.join(", ")}`); // Log invalid fields
-      return res.status(400).json({ error: `Invalid fields: ${invalidFields.join(", ")}` });
+      console.error(`Invalid fields: ${invalidFields.join(", ")}`);
+      return res
+        .status(400)
+        .json({ error: `Invalid fields: ${invalidFields.join(", ")}` });
     }
 
     // Convert `lease_start` and `lease_end` to Date objects
@@ -49,24 +53,38 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
 
     try {
-      console.log("Updating tenant with ID:", tenantId); // Debugging
-      console.log("Data being updated:", data); // Debugging
+      console.log("Updating tenant with ID:", tenantId);
+      console.log("Data being updated:", data);
 
-      // Update the tenant in the database
       const updatedTenant = await prisma.tenant.update({
         where: { id: tenantId },
         data,
       });
 
-      console.log("Updated tenant:", updatedTenant); // Debugging
+      console.log("Updated tenant:", updatedTenant);
       res.status(200).json(updatedTenant);
-    } catch (error: any) {
-      if (error.code === "P2025") {
-        console.error("Tenant not found:", error); // Debugging
-        res.status(404).json({ error: "Tenant not found" });
+    } catch (error: unknown) {
+      // Type guard for Prisma errors (no `any`)
+      function isPrismaError(err: unknown): err is { code: string } {
+        return (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          typeof (err as { code?: unknown }).code === "string"
+        );
+      }
+
+      if (error instanceof Error) {
+        if (isPrismaError(error) && error.code === "P2025") {
+          console.error("Tenant not found:", error);
+          res.status(404).json({ error: "Tenant not found" });
+        } else {
+          console.error("Error updating tenant:", error);
+          res.status(500).json({ error: "Failed to update tenant" });
+        }
       } else {
-        console.error("Error updating tenant:", error); // Debugging
-        res.status(500).json({ error: "Failed to update tenant" });
+        console.error("Unknown error:", error);
+        res.status(500).json({ error: "An unknown error occurred" });
       }
     }
   } else {

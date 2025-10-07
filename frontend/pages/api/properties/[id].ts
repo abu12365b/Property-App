@@ -7,24 +7,34 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === "PUT") {
     const data = req.body;
 
-    console.log("Request body:", data); // Log the incoming data
-    console.log("Property ID:", id); // Log the property ID
+    console.log("Request body:", data);
+    console.log("Property ID:", id);
 
     // Validate the `id`
     if (isNaN(Number(id))) {
       return res.status(400).json({ error: "Invalid property ID" });
     }
 
-    // Validate required fields
-    const requiredFields = ["name", "address", "country", "city", "postal_code", "type", "total_units", "monthly_rent", "status"];
+    // Required fields validation
+    const requiredFields = [
+      "name",
+      "address",
+      "country",
+      "city",
+      "postal_code",
+      "type",
+      "total_units",
+      "monthly_rent",
+      "status",
+    ];
     for (const field of requiredFields) {
       if (!data[field]) {
-        console.error(`Missing required field: ${field}`); // Log the missing field
+        console.error(`Missing required field: ${field}`);
         return res.status(400).json({ error: `Missing required field: ${field}` });
       }
     }
 
-    // Validate the `data` object
+    // Validate allowed fields
     const allowedFields = [
       "name",
       "address",
@@ -40,29 +50,43 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const invalidFields = Object.keys(data).filter((key) => !allowedFields.includes(key));
 
     if (invalidFields.length > 0) {
-      console.error(`Invalid fields: ${invalidFields.join(", ")}`); // Log invalid fields
+      console.error(`Invalid fields: ${invalidFields.join(", ")}`);
       return res.status(400).json({ error: `Invalid fields: ${invalidFields.join(", ")}` });
     }
 
     try {
-      console.log("Updating property with ID:", id); // Debugging
-      console.log("Data being updated:", data); // Debugging
+      console.log("Updating property with ID:", id);
+      console.log("Data being updated:", data);
 
-      // Update the property in the database
       const updatedProperty = await prisma.property.update({
         where: { id: Number(id) },
         data,
       });
 
-      console.log("Updated property:", updatedProperty); // Debugging
+      console.log("Updated property:", updatedProperty);
       res.status(200).json(updatedProperty);
-    } catch (error: any) {
-      if (error.code === "P2025") {
-        console.error("Property not found:", error); // Debugging
-        res.status(404).json({ error: "Property not found" });
+    } catch (error: unknown) {
+      // Type guard for Prisma errors (no `any`)
+      function isPrismaError(err: unknown): err is { code: string } {
+        return (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          typeof (err as { code?: unknown }).code === "string"
+        );
+      }
+
+      if (error instanceof Error) {
+        if (isPrismaError(error) && error.code === "P2025") {
+          console.error("Property not found:", error);
+          res.status(404).json({ error: "Property not found" });
+        } else {
+          console.error("Error updating property:", error);
+          res.status(500).json({ error: "Failed to update property" });
+        }
       } else {
-        console.error("Error updating property:", error); // Debugging
-        res.status(500).json({ error: "Failed to update property" });
+        console.error("Unknown error:", error);
+        res.status(500).json({ error: "An unknown error occurred" });
       }
     }
   } else {

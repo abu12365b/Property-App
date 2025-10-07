@@ -1,3 +1,4 @@
+import { GetServerSidePropsContext } from "next";
 import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -208,8 +209,8 @@ const TenantDetailsPage: React.FC<{ tenant: Tenant | null }> = ({ tenant }) => {
 export default TenantDetailsPage;
 
 // Fetch tenant details
-export async function getServerSideProps(context: any) {
-  const { id } = context.params;
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const { id } = context.params as { id: string }; // Explicitly type `params`
   const prisma = new PrismaClient();
 
   const tenant = await prisma.tenant.findUnique({

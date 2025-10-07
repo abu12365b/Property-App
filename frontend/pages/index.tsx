@@ -71,10 +71,10 @@ export default function Home() {
         </form>
 
         <p className="mt-4 text-center text-gray-600">
-          Don't have an account?{" "}
-          <a href="/signup" className="text-blue-500 hover:underline">
+          Don&apos;t have an account?{" "}
+          <Link href="/signup" className="text-blue-500 hover:underline">
             Sign up here
-          </a>
+          </Link>
           .
         </p>
       </div>

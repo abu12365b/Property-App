@@ -1,6 +1,7 @@
 import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { GetServerSidePropsContext } from "next";
 
 // This is what a financial record looks like (all details)
 interface Financial {
@@ -40,8 +41,8 @@ const FinancialDetailsPage: React.FC<{ financial: Financial | null }> = ({ finan
 export default FinancialDetailsPage;
 
 // This part gets the financial details from the database before the page loads
-export async function getServerSideProps(context: any) {
-  const { id } = context.params;
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const { id } = context.params as { id: string }; // Explicitly type `params`
   const prisma = new PrismaClient();
 
   const financial = await prisma.financial.findUnique({

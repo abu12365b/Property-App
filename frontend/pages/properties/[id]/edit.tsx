@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
+import { GetServerSidePropsContext } from "next";
 import prisma from "@/lib/prisma";
 
 interface Property {
@@ -194,8 +195,8 @@ const EditPropertyPage: React.FC<{ property: Property }> = ({ property }) => {
 export default EditPropertyPage;
 
 // Fetch the property details for the edit page
-export async function getServerSideProps(context: any) {
-  const { id } = context.params;
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const { id } = context.params as { id: string }; // Explicitly type `params`
 
   // Fetch the property details from the database
   const property = await prisma.property.findUnique({

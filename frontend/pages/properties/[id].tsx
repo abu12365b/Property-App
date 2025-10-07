@@ -1,9 +1,10 @@
 // pages/properties/[id].tsx
 // This file shows all the details for ONE property when you click its name
 
-import { PrismaClient } from "@prisma/client";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { GetServerSidePropsContext } from "next";
+import { PrismaClient } from "@prisma/client";
 
 // This is what a property looks like (all its details)
 interface Property {
@@ -84,8 +85,8 @@ function Detail({ label, value }: { label: string; value: string | number }) {
 export default PropertyDetailsPage;
 
 // This part runs on the server BEFORE the page loads
-export async function getServerSideProps(context: any) {
-  const { id } = context.params;
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const { id } = context.params as { id: string }; // Explicitly type `params`
   const prisma = new PrismaClient();
 
   const property = await prisma.property.findUnique({
@@ -108,6 +109,14 @@ export async function getServerSideProps(context: any) {
   });
 
   return {
-    props: { property: property ? { ...property, created_at: property.created_at.toISOString(), updated_at: property.updated_at.toISOString() } : null },
+    props: {
+      property: property
+        ? {
+            ...property,
+            created_at: property.created_at.toISOString(),
+            updated_at: property.updated_at.toISOString(),
+          }
+        : null,
+    },
   };
 }

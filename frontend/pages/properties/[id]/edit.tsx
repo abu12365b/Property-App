@@ -72,6 +72,11 @@ const EditPropertyPage: React.FC<{ property: Property }> = ({ property }) => {
     router.push(`/properties/${property.id}`); // Redirect to the property details page
   };
 
+  // Handle cancel button click
+  const handleCancel = () => {
+    router.push(`/properties/${property.id}`); // Redirect back to the property details page
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center">
       <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-2xl">
@@ -165,12 +170,21 @@ const EditPropertyPage: React.FC<{ property: Property }> = ({ property }) => {
             placeholder="Notes"
             className="border p-2 rounded"
           />
-          <button
-            type="submit"
-            className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
-          >
-            Save Changes
-          </button>
+          <div className="flex gap-4">
+            <button
+              type="submit"
+              className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
+            >
+              Save Changes
+            </button>
+            <button
+              type="button"
+              onClick={handleCancel}
+              className="bg-gray-500 text-white py-2 px-4 rounded hover:bg-gray-600 transition"
+            >
+              Cancel
+            </button>
+          </div>
         </form>
       </div>
     </div>

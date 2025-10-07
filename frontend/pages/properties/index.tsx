@@ -47,7 +47,7 @@ const PropertiesPage: React.FC<{ properties: Property[] }> = ({ properties }) =>
         href="/signin" // Navigate to the sign-in page
         className="text-blue-500 underline mb-6 block text-lg hover:text-blue-700 transition-colors"
       >
-        &larr; Back to Sign In {/* Text for the link */}
+        &larr; Back to Home {/* Text for the link */}
       </Link>
 
       {/* Title for the properties page */}

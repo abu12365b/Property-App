@@ -34,7 +34,7 @@ const PropertiesPage: React.FC<{ properties: Property[] }> = ({ properties }) =>
   <div className="min-h-screen bg-gradient-to-br from-blue-100 via-purple-100 to-pink-100 flex flex-col items-center">
     <div className="w-full max-w-4xl mt-10 bg-white/80 rounded-2xl shadow-2xl p-10 border border-gray-200">
       {/* Add a link to go back to the home page */}
-      <Link href="/" className="text-blue-500 underline mb-6 block text-lg hover:text-blue-700 transition-colors">&larr; Back to Home</Link>
+      <Link href="/signin" className="text-blue-500 underline mb-6 block text-lg hover:text-blue-700 transition-colors">&larr; Back to Home</Link>
       <div className="flex items-center gap-3 mb-8">
         <span className="text-3xl">🏡</span>
         <h1 className="text-3xl font-extrabold text-gray-800 tracking-tight drop-shadow-lg">Properties</h1>

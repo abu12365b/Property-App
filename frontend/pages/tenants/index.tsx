@@ -22,7 +22,7 @@ const TenantRow: React.FC<{ tenant: Tenant }> = ({ tenant }) => (
 const TenantsPage: React.FC<{ tenants: Tenant[] }> = ({ tenants }) => (
   <div className="p-8">
     {/* Add a link to go back to the home page */}
-    <Link href="/" className="text-blue-500 underline mb-4 block">
+    <Link href="/signin" className="text-blue-500 underline mb-4 block">
       &larr; Back to Home
     </Link>
     <h1 className="text-2xl font-bold mb-4">Tenants</h1>

@@ -24,7 +24,7 @@ const FinancialRow: React.FC<{ financial: Financial }> = ({ financial }) => (
 const FinancialsPage: React.FC<{ financials: Financial[] }> = ({ financials }) => (
   <div className="p-8">
     {/* Add a link to go back to the home page */}
-    <Link href="/" className="text-blue-500 underline mb-4 block">&larr; Back to Home</Link>
+    <Link href="/signin" className="text-blue-500 underline mb-4 block">&larr; Back to Home</Link>
     <h1 className="text-2xl font-bold mb-4">Financials</h1>
     <table className="min-w-full border-collapse border border-gray-200">
       <thead>

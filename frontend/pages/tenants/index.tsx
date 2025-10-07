@@ -1,27 +1,33 @@
 import Link from "next/link";
 import { PrismaClient } from "@prisma/client";
 
-// This is what a tenant looks like (just the important stuff)
+// Updated Tenant interface
 interface Tenant {
   id: number;
   name: string;
-  unit_number: string;
-  status: string;
+  phone: string; // Add phone number
+  property: {
+    id: number;
+    name: string; // Add property name
+  };
 }
 
+// Updated TenantRow component
 const TenantRow: React.FC<{ tenant: Tenant }> = ({ tenant }) => (
   <tr key={tenant.id} className="hover:bg-gray-50 cursor-pointer">
     <td className="border p-2">
       <Link href={`/tenants/${tenant.id}`}>{tenant.name}</Link>
     </td>
-    <td className="border p-2">{tenant.unit_number}</td>
-    <td className="border p-2">{tenant.status}</td>
+    <td className="border p-2">{tenant.phone}</td>
+    <td className="border p-2">
+      {tenant.property.name} (ID: {tenant.property.id})
+    </td>
   </tr>
 );
 
+// Updated TenantsPage component
 const TenantsPage: React.FC<{ tenants: Tenant[] }> = ({ tenants }) => (
   <div className="p-8">
-    {/* Add a link to go back to the home page */}
     <Link href="/signin" className="text-blue-500 underline mb-4 block">
       &larr; Back to Home
     </Link>
@@ -30,8 +36,8 @@ const TenantsPage: React.FC<{ tenants: Tenant[] }> = ({ tenants }) => (
       <thead>
         <tr className="bg-gray-100">
           <th className="border p-2 text-left">Name</th>
-          <th className="border p-2 text-left">Unit Number</th>
-          <th className="border p-2 text-left">Status</th>
+          <th className="border p-2 text-left">Phone Number</th>
+          <th className="border p-2 text-left">Property</th>
         </tr>
       </thead>
       <tbody>
@@ -45,17 +51,22 @@ const TenantsPage: React.FC<{ tenants: Tenant[] }> = ({ tenants }) => (
 
 export default TenantsPage;
 
-// This part gets the tenants from the database before the page loads
+// Updated getServerSideProps function
 export async function getServerSideProps() {
   const prisma = new PrismaClient();
 
-  // Only get the 3 important columns
+  // Fetch tenants with their phone number and related property name
   const tenants = await prisma.tenant.findMany({
     select: {
       id: true,
       name: true,
-      unit_number: true,
-      status: true,
+      phone: true, // Include the phone number
+      property: {
+        select: {
+          id: true,
+          name: true, // Include the property name
+        },
+      },
     },
   });
 

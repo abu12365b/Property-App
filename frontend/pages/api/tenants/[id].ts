@@ -112,8 +112,159 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         res.status(500).json({ error: "An unknown error occurred" });
       }
     }
+  } else if (req.method === "PATCH") {
+    const tenantId = Number(id);
+
+    console.log("PATCH Request body:", req.body);
+    console.log("Tenant ID:", tenantId);
+
+    // Validate the `id`
+    if (isNaN(tenantId)) {
+      return res.status(400).json({ error: "Invalid tenant ID" });
+    }
+
+    // Validate that at least one field is provided
+    if (Object.keys(req.body).length === 0) {
+      return res.status(400).json({ error: "At least one field must be provided for update" });
+    }
+
+    // Validate allowed fields
+    const allowedFields = [
+      "name",
+      "email",
+      "phone",
+      "monthly_rent",
+      "lease_start",
+      "lease_end",
+      "status",
+    ];
+    const invalidFields = Object.keys(req.body).filter(
+      (key) => !allowedFields.includes(key)
+    );
+
+    if (invalidFields.length > 0) {
+      console.error(`Invalid fields: ${invalidFields.join(", ")}`);
+      return res
+        .status(400)
+        .json({ error: `Invalid fields: ${invalidFields.join(", ")}` });
+    }
+
+    // Build update data object with only provided fields
+    const updateData: any = {};
+
+    // Validate and add each field if provided
+    if (req.body.name !== undefined) {
+      if (!req.body.name || req.body.name.trim().length < 2) {
+        return res.status(400).json({ error: "Name must be at least 2 characters" });
+      }
+      updateData.name = req.body.name.trim();
+    }
+
+    if (req.body.email !== undefined) {
+      if (req.body.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(req.body.email)) {
+        return res.status(400).json({ error: "Invalid email format" });
+      }
+      updateData.email = req.body.email || null;
+    }
+
+    if (req.body.phone !== undefined) {
+      if (req.body.phone && !/^[\+]?[\d\s\-\(\)]{10,}$/.test(req.body.phone.replace(/\s/g, ''))) {
+        return res.status(400).json({ error: "Invalid phone number format" });
+      }
+      updateData.phone = req.body.phone || null;
+    }
+
+    if (req.body.monthly_rent !== undefined) {
+      const monthlyRent = parseFloat(req.body.monthly_rent);
+      if (isNaN(monthlyRent) || monthlyRent < 0 || monthlyRent > 1000000) {
+        return res.status(400).json({ 
+          error: "Monthly rent must be a positive number between $0 and $1,000,000" 
+        });
+      }
+      updateData.monthly_rent = monthlyRent;
+    }
+
+    if (req.body.lease_start !== undefined) {
+      if (!req.body.lease_start) {
+        return res.status(400).json({ error: "Lease start date is required" });
+      }
+      try {
+        updateData.lease_start = new Date(req.body.lease_start);
+        if (isNaN(updateData.lease_start.getTime())) {
+          return res.status(400).json({ error: "Invalid lease start date" });
+        }
+      } catch (error) {
+        return res.status(400).json({ error: "Invalid lease start date format" });
+      }
+    }
+
+    if (req.body.lease_end !== undefined) {
+      if (req.body.lease_end) {
+        try {
+          updateData.lease_end = new Date(req.body.lease_end);
+          if (isNaN(updateData.lease_end.getTime())) {
+            return res.status(400).json({ error: "Invalid lease end date" });
+          }
+          
+          // If both dates are being updated, validate end > start
+          if (updateData.lease_start && updateData.lease_end <= updateData.lease_start) {
+            return res.status(400).json({ error: "Lease end date must be after start date" });
+          }
+        } catch (error) {
+          return res.status(400).json({ error: "Invalid lease end date format" });
+        }
+      } else {
+        updateData.lease_end = null;
+      }
+    }
+
+    if (req.body.status !== undefined) {
+      const validStatuses = Object.keys(TENANT_STATUSES);
+      if (!validStatuses.includes(req.body.status)) {
+        return res.status(400).json({ 
+          error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` 
+        });
+      }
+      updateData.status = req.body.status;
+    }
+
+    try {
+      console.log("PATCH: Updating tenant with ID:", tenantId);
+      console.log("PATCH: Data being updated:", updateData);
+
+      const updatedTenant = await prisma.tenant.update({
+        where: { id: tenantId },
+        data: updateData,
+      });
+
+      console.log("PATCH: Updated tenant:", updatedTenant);
+      res.status(200).json(updatedTenant);
+    } catch (error: unknown) {
+      // Type guard for Prisma errors (no `any`)
+      function isPrismaError(err: unknown): err is { code: string } {
+        return (
+          typeof err === "object" &&
+          err !== null &&
+          "code" in err &&
+          typeof (err as { code?: unknown }).code === "string"
+        );
+      }
+
+      if (error instanceof Error) {
+        if (isPrismaError(error) && error.code === "P2025") {
+          console.error("PATCH: Tenant not found:", error);
+          res.status(404).json({ error: "Tenant not found" });
+        } else {
+          console.error("PATCH: Error updating tenant:", error);
+          res.status(500).json({ error: "Failed to update tenant" });
+        }
+      } else {
+        console.error("PATCH: Unknown error:", error);
+        res.status(500).json({ error: "An unknown error occurred" });
+      }
+    }
   } else {
-    res.setHeader("Allow", ["PUT"]);
+    res.setHeader("Allow", ["PUT", "PATCH"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

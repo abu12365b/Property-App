@@ -443,6 +443,34 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
               {errors.monthly_rent && <p className="mt-1 text-sm text-red-600">{errors.monthly_rent}</p>}
             </div>
 
+            {/* Current Database Values Display */}
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+              <h3 className="text-lg font-semibold text-blue-800 mb-3">📋 Current Database Values</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="font-medium text-blue-700">Lease Start:</span>
+                  <div className="bg-white p-2 rounded border mt-1">
+                    {tenant.lease_start ? formatDateForDisplay(tenant.lease_start) : "Not set"}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Raw value: {tenant.lease_start || "null"}
+                  </div>
+                </div>
+                <div>
+                  <span className="font-medium text-blue-700">Lease End:</span>
+                  <div className="bg-white p-2 rounded border mt-1">
+                    {tenant.lease_end ? formatDateForDisplay(tenant.lease_end) : "Not set"}
+                  </div>
+                  <div className="text-xs text-gray-500 mt-1">
+                    Raw value: {tenant.lease_end || "null"}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-3 text-xs text-blue-600">
+                💡 These are the current values stored in the database. Use them as reference when editing the dates below.
+              </div>
+            </div>
+
             {/* Lease Dates - Simple Approach */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {/* Lease Start */}
@@ -452,7 +480,7 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                 </label>
                 <div className="space-y-2">
                   <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                    Current: {tenant.lease_start ? formatDateForDisplay(tenant.lease_start) : "Not set"}
+                    Expected format: YYYY-MM-DD (e.g., 2024-01-15)
                   </div>
                   <input
                     type="date"
@@ -460,11 +488,15 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                     name="lease_start"
                     value={formData.lease_start} // Use controlled value
                     onChange={handleChange}
+                    placeholder="YYYY-MM-DD"
                     className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.lease_start ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     }`}
                     required
                   />
+                  <div className="text-xs text-gray-500">
+                    Current input value: "{formData.lease_start}"
+                  </div>
                 </div>
                 {errors.lease_start && <p className="mt-1 text-sm text-red-600">{errors.lease_start}</p>}
               </div>
@@ -476,7 +508,7 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                 </label>
                 <div className="space-y-2">
                   <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
-                    Current: {tenant.lease_end ? formatDateForDisplay(tenant.lease_end) : "Not set"}
+                    Expected format: YYYY-MM-DD (e.g., 2024-12-31)
                   </div>
                   <input
                     type="date"
@@ -484,10 +516,14 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                     name="lease_end"
                     value={formData.lease_end} // Use controlled value
                     onChange={handleChange}
+                    placeholder="YYYY-MM-DD"
                     className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.lease_end ? 'border-red-500 bg-red-50' : 'border-gray-300'
                     }`}
                   />
+                  <div className="text-xs text-gray-500">
+                    Current input value: "{formData.lease_end}"
+                  </div>
                 </div>
                 {errors.lease_end && <p className="mt-1 text-sm text-red-600">{errors.lease_end}</p>}
               </div>

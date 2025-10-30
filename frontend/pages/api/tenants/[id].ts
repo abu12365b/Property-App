@@ -1,6 +1,15 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../lib/prisma";
 
+// Valid tenant status options
+const TENANT_STATUSES = {
+  active: "Active",
+  moved_out: "Moved Out",
+  inactive: "Inactive", 
+  evicted: "Evicted",
+  pending: "Pending"
+} as const;
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
 
@@ -16,12 +25,28 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     // Validate required fields
-    const requiredFields = ["name", "phone", "monthly_rent", "lease_start", "status"];
+    const requiredFields = ["name", "monthly_rent", "lease_start", "status"];
     for (const field of requiredFields) {
-      if (!req.body[field]) {
+      if (!req.body[field] && req.body[field] !== 0) {
         console.error(`Missing required field: ${field}`);
         return res.status(400).json({ error: `Missing required field: ${field}` });
       }
+    }
+
+    // Validate status is valid
+    const validStatuses = Object.keys(TENANT_STATUSES);
+    if (!validStatuses.includes(req.body.status)) {
+      return res.status(400).json({ 
+        error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` 
+      });
+    }
+
+    // Validate monthly rent
+    const monthlyRent = parseFloat(req.body.monthly_rent);
+    if (isNaN(monthlyRent) || monthlyRent < 0 || monthlyRent > 1000000) {
+      return res.status(400).json({ 
+        error: "Monthly rent must be a positive number between $0 and $1,000,000" 
+      });
     }
 
     // Validate allowed fields

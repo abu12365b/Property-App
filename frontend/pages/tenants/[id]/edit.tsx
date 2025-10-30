@@ -10,8 +10,8 @@ interface Tenant {
   email?: string;
   phone?: string;
   monthly_rent: number;
-  lease_start: string;
-  lease_end?: string;
+  lease_start: string | null;
+  lease_end?: string | null;
   status: string;
 }
 
@@ -42,9 +42,48 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
   // Simplified formatDate function for date inputs
   const formatDateForInput = (date: string | null | undefined) => {
     if (!date) return "";
-    // Ensure we get YYYY-MM-DD format for date inputs
-    return date.split('T')[0];
+    
+    // If it's already in YYYY-MM-DD format, return as is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      return date;
+    }
+    
+    try {
+      // Handle other formats by parsing and reformatting
+      const dateObj = new Date(date);
+      
+      // Check if it's a valid date
+      if (isNaN(dateObj.getTime())) {
+        console.warn('Invalid date:', date);
+        return "";
+      }
+      
+      // Format as YYYY-MM-DD for date inputs
+      const year = dateObj.getFullYear();
+      const month = String(dateObj.getMonth() + 1).padStart(2, '0');
+      const day = String(dateObj.getDate()).padStart(2, '0');
+      
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      console.error('Error formatting date:', date, error);
+      return "";
+    }
   };
+
+  // Debug: Log the original tenant data first
+  console.log('Raw tenant data received:', tenant);
+  
+  // Format dates for form inputs
+  const formattedLeaseStart = formatDateForInput(tenant.lease_start);
+  const formattedLeaseEnd = formatDateForInput(tenant.lease_end);
+  
+  // Debug: Log the formatted dates
+  console.log('Date formatting:', {
+    original_lease_start: tenant.lease_start,
+    original_lease_end: tenant.lease_end,
+    formatted_lease_start: formattedLeaseStart,
+    formatted_lease_end: formattedLeaseEnd
+  });
 
   // State for form fields
   const [formData, setFormData] = useState({
@@ -52,8 +91,8 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
     email: tenant.email || "",
     phone: tenant.phone || "",
     monthly_rent: tenant.monthly_rent.toString(),
-    lease_start: formatDateForInput(tenant.lease_start),
-    lease_end: formatDateForInput(tenant.lease_end),
+    lease_start: formattedLeaseStart,
+    lease_end: formattedLeaseEnd,
     status: tenant.status,
   });
 
@@ -61,6 +100,59 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isDirty, setIsDirty] = useState(false);
+  
+  // State for date editing
+  const [isEditingLeaseStart, setIsEditingLeaseStart] = useState(false);
+  const [isEditingLeaseEnd, setIsEditingLeaseEnd] = useState(false);
+
+  // Helper function to format date for display
+  const formatDateForDisplay = (date: string | null | undefined) => {
+    if (!date) return "Not set";
+    
+    try {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) return "Invalid date";
+      
+      return dateObj.toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      return "Invalid date";
+    }
+  };
+
+  // Helper functions for date editing
+  const handleLeaseStartEdit = () => {
+    setIsEditingLeaseStart(true);
+  };
+
+  const handleLeaseEndEdit = () => {
+    setIsEditingLeaseEnd(true);
+  };
+
+  const handleLeaseStartSave = () => {
+    setIsEditingLeaseStart(false);
+    setIsDirty(true);
+  };
+
+  const handleLeaseEndSave = () => {
+    setIsEditingLeaseEnd(false);
+    setIsDirty(true);
+  };
+
+  const handleLeaseStartCancel = () => {
+    // Reset to original value
+    setFormData({ ...formData, lease_start: formattedLeaseStart });
+    setIsEditingLeaseStart(false);
+  };
+
+  const handleLeaseEndCancel = () => {
+    // Reset to original value
+    setFormData({ ...formData, lease_end: formattedLeaseEnd });
+    setIsEditingLeaseEnd(false);
+  };
 
   // Warn user about unsaved changes when leaving the page
   useEffect(() => {
@@ -337,41 +429,134 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
             </div>
 
             {/* Lease Dates */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Lease Start */}
+            <div className="space-y-4">
+              {/* Lease Start Date */}
               <div>
-                <label htmlFor="lease_start" className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Lease Start Date <span className="text-red-500">*</span>
                 </label>
-                <input
-                  type="date"
-                  id="lease_start"
-                  name="lease_start"
-                  value={formData.lease_start}
-                  onChange={handleChange}
-                  className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.lease_start ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
-                  required
-                />
+                
+                {!isEditingLeaseStart ? (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium text-gray-900">
+                        {formatDateForDisplay(tenant.lease_start)}
+                      </span>
+                      {tenant.lease_start && (
+                        <span className="text-xs text-gray-500">
+                          ({formattedLeaseStart})
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleLeaseStartEdit}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:underline"
+                    >
+                      Change
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="date"
+                      name="lease_start"
+                      value={formData.lease_start}
+                      onChange={handleChange}
+                      className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.lease_start ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      }`}
+                      required
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleLeaseStartSave}
+                        className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleLeaseStartCancel}
+                        className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
                 {errors.lease_start && <p className="mt-1 text-sm text-red-600">{errors.lease_start}</p>}
               </div>
 
-              {/* Lease End */}
+              {/* Lease End Date */}
               <div>
-                <label htmlFor="lease_end" className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Lease End Date
                 </label>
-                <input
-                  type="date"
-                  id="lease_end"
-                  name="lease_end"
-                  value={formData.lease_end}
-                  onChange={handleChange}
-                  className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                    errors.lease_end ? 'border-red-500 bg-red-50' : 'border-gray-300'
-                  }`}
-                />
+                
+                {!isEditingLeaseEnd ? (
+                  <div className="flex items-center justify-between p-3 bg-gray-50 border border-gray-200 rounded-md">
+                    <div className="flex items-center space-x-3">
+                      <span className="text-sm font-medium text-gray-900">
+                        {formatDateForDisplay(tenant.lease_end)}
+                      </span>
+                      {tenant.lease_end && (
+                        <span className="text-xs text-gray-500">
+                          ({formattedLeaseEnd})
+                        </span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleLeaseEndEdit}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium focus:outline-none focus:underline"
+                    >
+                      {tenant.lease_end ? 'Change' : 'Set Date'}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      type="date"
+                      name="lease_end"
+                      value={formData.lease_end}
+                      onChange={handleChange}
+                      className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                        errors.lease_end ? 'border-red-500 bg-red-50' : 'border-gray-300'
+                      }`}
+                    />
+                    <div className="flex space-x-2">
+                      <button
+                        type="button"
+                        onClick={handleLeaseEndSave}
+                        className="text-sm bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleLeaseEndCancel}
+                        className="text-sm bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      >
+                        Cancel
+                      </button>
+                      {tenant.lease_end && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setFormData({ ...formData, lease_end: "" });
+                            setIsEditingLeaseEnd(false);
+                            setIsDirty(true);
+                          }}
+                          className="text-sm bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                        >
+                          Remove Date
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
                 {errors.lease_end && <p className="mt-1 text-sm text-red-600">{errors.lease_end}</p>}
               </div>
             </div>
@@ -472,11 +657,11 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       };
     }
 
-    // Convert dates to strings for serialization
+    // Convert dates to strings for serialization - use date-only format for form inputs
     const serializedTenant = {
       ...tenant,
-      lease_start: tenant.lease_start?.toISOString().split('T')[0] || null,
-      lease_end: tenant.lease_end?.toISOString().split('T')[0] || null,
+      lease_start: tenant.lease_start ? tenant.lease_start.toISOString().split('T')[0] : null,
+      lease_end: tenant.lease_end ? tenant.lease_end.toISOString().split('T')[0] : null,
     };
 
     return {

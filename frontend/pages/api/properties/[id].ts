@@ -4,6 +4,16 @@
 import { NextApiRequest, NextApiResponse } from "next"; // Types for API requests and responses
 import prisma from "../../../lib/prisma";              // Database connection tool
 
+// Valid property status options
+const PROPERTY_STATUSES = {
+  available: "Available",
+  occupied: "Occupied",
+  maintenance: "Under Maintenance",
+  renovation: "Under Renovation", 
+  vacant: "Vacant",
+  sold: "Sold"
+} as const;
+
 // Define what a valid property data should look like
 interface PropertyData {
   name: string;         // Property name (required)
@@ -263,10 +273,21 @@ function validatePropertyData(data: PropertyUpdateData | PropertyData, res: Next
     }
   }
 
+  // Validate status is a valid option
+  if (data.status !== undefined) {
+    const validStatuses = Object.keys(PROPERTY_STATUSES);
+    if (!validStatuses.includes(data.status)) {
+      res.status(400).json({ 
+        error: `Invalid status. Must be one of: ${validStatuses.join(", ")}` 
+      });
+      return false;
+    }
+  }
+
   // Validate string fields are not empty
   // Define the string fields we want to validate
   const stringFields: (keyof (PropertyUpdateData | PropertyData))[] = [
-    "name", "address", "country", "city", "postal_code", "type", "status"
+    "name", "address", "country", "city", "postal_code", "type"
   ];
   
   for (const field of stringFields) {

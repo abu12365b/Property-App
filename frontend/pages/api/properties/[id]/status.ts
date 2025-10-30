@@ -1,30 +1,31 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import prisma from "../../../../lib/prisma";
 
-// Valid tenant status options
-const TENANT_STATUSES = {
-  active: "Active",
-  moved_out: "Moved Out",
-  inactive: "Inactive", 
-  evicted: "Evicted",
-  pending: "Pending"
+// Valid property status options
+const PROPERTY_STATUSES = {
+  available: "Available",
+  occupied: "Occupied",
+  maintenance: "Under Maintenance",
+  renovation: "Under Renovation", 
+  vacant: "Vacant",
+  sold: "Sold"
 } as const;
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
 
   if (req.method === "PATCH") {
-    const tenantId = Number(id);
+    const propertyId = Number(id);
 
     // Validate the `id`
-    if (isNaN(tenantId)) {
-      return res.status(400).json({ error: "Invalid tenant ID" });
+    if (isNaN(propertyId)) {
+      return res.status(400).json({ error: "Invalid property ID" });
     }
 
     const { status } = req.body;
 
     // Validate status
-    const allowedStatuses = Object.keys(TENANT_STATUSES);
+    const allowedStatuses = Object.keys(PROPERTY_STATUSES);
     if (!status || !allowedStatuses.includes(status)) {
       return res.status(400).json({ 
         error: `Invalid status. Must be one of: ${allowedStatuses.join(", ")}` 
@@ -32,8 +33,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     try {
-      const updatedTenant = await prisma.tenant.update({
-        where: { id: tenantId },
+      const updatedProperty = await prisma.property.update({
+        where: { id: propertyId },
         data: { status },
         select: {
           id: true,
@@ -42,7 +43,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         },
       });
 
-      res.status(200).json(updatedTenant);
+      res.status(200).json(updatedProperty);
     } catch (error: unknown) {
       // Type guard for Prisma errors
       function isPrismaError(err: unknown): err is { code: string } {
@@ -56,10 +57,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       if (error instanceof Error) {
         if (isPrismaError(error) && error.code === "P2025") {
-          res.status(404).json({ error: "Tenant not found" });
+          res.status(404).json({ error: "Property not found" });
         } else {
-          console.error("Error updating tenant status:", error);
-          res.status(500).json({ error: "Failed to update tenant status" });
+          console.error("Error updating property status:", error);
+          res.status(500).json({ error: "Failed to update property status" });
         }
       } else {
         console.error("Unknown error:", error);

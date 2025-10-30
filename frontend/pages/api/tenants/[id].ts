@@ -24,8 +24,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: "Invalid tenant ID" });
     }
 
-    // Validate required fields
-    const requiredFields = ["name", "monthly_rent", "lease_start", "status"];
+    // Validate required fields (lease_start can be null for updates)
+    const requiredFields = ["name", "monthly_rent", "status"];
     for (const field of requiredFields) {
       if (!req.body[field] && req.body[field] !== 0) {
         console.error(`Missing required field: ${field}`);
@@ -70,9 +70,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         .json({ error: `Invalid fields: ${invalidFields.join(", ")}` });
     }
 
-    // Convert `lease_start` and `lease_end` to Date objects
+    // Convert data types for database
     const data = {
       ...req.body,
+      monthly_rent: parseFloat(req.body.monthly_rent), // Convert to number
       lease_start: req.body.lease_start ? new Date(req.body.lease_start) : null,
       lease_end: req.body.lease_end ? new Date(req.body.lease_end) : null,
     };

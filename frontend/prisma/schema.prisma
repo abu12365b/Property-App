@@ -35,7 +35,7 @@ model Tenant {
   email        String?
   phone        String?
   monthly_rent Float
-  lease_start  DateTime
+  lease_start  DateTime  @db.Date
   lease_end    DateTime?
   status       String
   payments     Payment[]

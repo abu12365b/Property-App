@@ -4,6 +4,16 @@
 import { useState } from "react";      // For managing form data that changes
 import { useRouter } from "next/router"; // For navigating between pages
 
+// Property status options - matching the API validation
+const PROPERTY_STATUSES = {
+  available: "Available",
+  occupied: "Occupied",
+  maintenance: "Under Maintenance",
+  renovation: "Under Renovation", 
+  vacant: "Vacant",
+  sold: "Sold"
+} as const;
+
 // Define the structure of our form data with proper TypeScript typing
 interface PropertyFormData {
   name: string;
@@ -43,7 +53,7 @@ const AddPropertyPage = () => {
     type: "",
     total_units: "", // Initialize as an empty string
     monthly_rent: "", // Initialize as an empty string
-    status: "vacant", // Set a default status
+    status: "available", // Set a default status using our constants
     notes: "",
   });
 
@@ -377,10 +387,12 @@ const AddPropertyPage = () => {
               required
               disabled={isLoading}
             >
-              <option value="vacant">Vacant</option>
-              <option value="occupied">Occupied</option>
-              <option value="maintenance">Under Maintenance</option>
-              <option value="unavailable">Unavailable</option>
+              <option value="">Select Status</option>
+              {Object.entries(PROPERTY_STATUSES).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
             </select>
           </div>
 

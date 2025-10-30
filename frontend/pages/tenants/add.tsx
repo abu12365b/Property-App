@@ -7,6 +7,15 @@ interface PropertyOption {
   label: string;
 }
 
+// Status options for tenant management
+const TENANT_STATUSES = {
+  active: "Active",
+  moved_out: "Moved Out",
+  inactive: "Inactive", 
+  evicted: "Evicted",
+  pending: "Pending"
+} as const;
+
 const AddTenantPage = () => {
   const router = useRouter();
 
@@ -39,7 +48,7 @@ const AddTenantPage = () => {
     fetchProperties();
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -152,15 +161,20 @@ const AddTenantPage = () => {
             placeholder="Lease End"
             className="border p-2 rounded"
           />
-          <input
-            type="text"
+          <select
             name="status"
             value={formData.status}
             onChange={handleChange}
-            placeholder="Status"
-            className="border p-2 rounded"
+            className="border p-2 rounded bg-white"
             required
-          />
+          >
+            <option value="">Select Status</option>
+            {Object.entries(TENANT_STATUSES).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
           <div className="flex gap-4">
             <button
               type="submit"

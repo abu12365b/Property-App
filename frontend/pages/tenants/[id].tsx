@@ -4,6 +4,15 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
+// Status options for tenant management
+const TENANT_STATUSES = {
+  active: "Active",
+  moved_out: "Moved Out",
+  inactive: "Inactive", 
+  evicted: "Evicted",
+  pending: "Pending"
+} as const;
+
 // Updated Tenant interface
 interface Tenant {
   id: number;
@@ -20,6 +29,81 @@ interface Tenant {
   lease_end?: string;
   status: string;
 }
+
+// Get status badge color
+const getStatusBadgeColor = (status: string) => {
+  switch (status.toLowerCase()) {
+    case 'active':
+      return 'bg-green-100 text-green-800 border-green-200';
+    case 'moved_out':
+      return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'inactive':
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+    case 'evicted':
+      return 'bg-red-100 text-red-800 border-red-200';
+    case 'pending':
+      return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+    default:
+      return 'bg-gray-100 text-gray-800 border-gray-200';
+  }
+};
+
+// Quick Status Change Component
+const QuickStatusChange: React.FC<{
+  tenantId: number;
+  currentStatus: string;
+  onStatusChange: () => void;
+}> = ({ tenantId, currentStatus, onStatusChange }) => {
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const handleStatusChange = async (newStatus: string) => {
+    if (newStatus === currentStatus) return;
+
+    setIsUpdating(true);
+    try {
+      const response = await fetch(`/api/tenants/${tenantId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: newStatus,
+        }),
+      });
+
+      if (response.ok) {
+        onStatusChange();
+      } else {
+        const errorData = await response.json();
+        alert(`Failed to update tenant status: ${errorData.error || 'Please try again.'}`);
+      }
+    } catch (error) {
+      console.error('Error updating tenant status:', error);
+      alert('Error updating tenant status. Please try again.');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-sm font-medium">Quick Status:</span>
+      <select
+        value={currentStatus}
+        onChange={(e) => handleStatusChange(e.target.value)}
+        disabled={isUpdating}
+        className="border rounded px-2 py-1 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
+      >
+        {Object.entries(TENANT_STATUSES).map(([value, label]) => (
+          <option key={value} value={value}>
+            {label}
+          </option>
+        ))}
+      </select>
+      {isUpdating && <span className="text-xs text-blue-600">Updating...</span>}
+    </div>
+  );
+};
 
 const TenantDetailsPage: React.FC<{ tenant: Tenant | null }> = ({ tenant }) => {
   const router = useRouter();
@@ -38,7 +122,7 @@ const TenantDetailsPage: React.FC<{ tenant: Tenant | null }> = ({ tenant }) => {
   if (!tenant) return <div className="p-8">Tenant not found.</div>;
 
   // Handle form field changes
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData({ ...formData, [name]: value });
   };
@@ -124,15 +208,20 @@ const TenantDetailsPage: React.FC<{ tenant: Tenant | null }> = ({ tenant }) => {
                 onChange={handleChange}
                 className="border p-2 rounded"
               />
-              <input
-                type="text"
+              <select
                 name="status"
                 value={formData.status}
                 onChange={handleChange}
-                placeholder="Status"
                 className="border p-2 rounded"
                 required
-              />
+              >
+                <option value="">Select Status</option>
+                {Object.entries(TENANT_STATUSES).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
               <button
                 type="submit"
                 className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition"
@@ -182,7 +271,11 @@ const TenantDetailsPage: React.FC<{ tenant: Tenant | null }> = ({ tenant }) => {
                 </tr>
                 <tr>
                   <td className="font-bold p-2">Status</td>
-                  <td className="p-2">{tenant.status}</td>
+                  <td className="p-2">
+                    <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusBadgeColor(tenant.status)}`}>
+                      {TENANT_STATUSES[tenant.status as keyof typeof TENANT_STATUSES] || tenant.status}
+                    </span>
+                  </td>
                 </tr>
                 <tr>
                   <td className="font-bold p-2">Property</td>
@@ -193,12 +286,19 @@ const TenantDetailsPage: React.FC<{ tenant: Tenant | null }> = ({ tenant }) => {
           )}
 
           {!isEditing && (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="bg-blue-500 text-white py-2 rounded hover:bg-blue-600 transition mt-4"
-            >
-              Edit Tenant
-            </button>
+            <div className="flex gap-2 mt-4">
+              <button
+                onClick={() => setIsEditing(true)}
+                className="bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition"
+              >
+                Edit Tenant
+              </button>
+              <QuickStatusChange 
+                tenantId={tenant.id} 
+                currentStatus={tenant.status}
+                onStatusChange={() => router.reload()}
+              />
+            </div>
           )}
         </div>
       </div>

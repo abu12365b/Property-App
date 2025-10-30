@@ -13,7 +13,37 @@ const TENANT_STATUSES = {
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { id } = req.query;
 
-  if (req.method === "PUT") {
+  if (req.method === "GET") {
+    const tenantId = Number(id);
+
+    // Validate the `id`
+    if (isNaN(tenantId)) {
+      return res.status(400).json({ error: "Invalid tenant ID" });
+    }
+
+    try {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+      });
+
+      if (!tenant) {
+        return res.status(404).json({ error: "Tenant not found" });
+      }
+
+      // Format dates for JSON serialization
+      const serializedTenant = {
+        ...tenant,
+        monthly_rent: Number(tenant.monthly_rent), // Ensure it's a number
+        lease_start: tenant.lease_start ? tenant.lease_start.toISOString() : null,
+        lease_end: tenant.lease_end ? tenant.lease_end.toISOString() : null,
+      };
+
+      res.status(200).json(serializedTenant);
+    } catch (error) {
+      console.error("Error fetching tenant:", error);
+      res.status(500).json({ error: "Failed to fetch tenant" });
+    }
+  } else if (req.method === "PUT") {
     const tenantId = Number(id);
 
     console.log("Request body:", req.body);
@@ -265,7 +295,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       }
     }
   } else {
-    res.setHeader("Allow", ["PUT", "PATCH"]);
+    res.setHeader("Allow", ["GET", "PUT", "PATCH"]);
     res.status(405).end(`Method ${req.method} Not Allowed`);
   }
 }

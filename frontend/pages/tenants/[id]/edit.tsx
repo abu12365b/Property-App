@@ -4,6 +4,137 @@ import { GetServerSidePropsContext } from "next";
 import Link from "next/link";
 import prisma from "@/lib/prisma";
 
+// Enhanced DatePicker Component
+interface DatePickerProps {
+  id: string;
+  name: string;
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  required?: boolean;
+  error?: string;
+  label: string;
+}
+
+const DatePicker: React.FC<DatePickerProps> = ({
+  id,
+  name,
+  value,
+  onChange,
+  placeholder,
+  required = false,
+  error,
+  label
+}) => {
+  const [isFocused, setIsFocused] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  
+  // Format the displayed date for better UX
+  const getDisplayValue = () => {
+    if (!value) return '';
+    try {
+      const date = new Date(value + 'T00:00:00'); // Ensure proper parsing
+      if (isNaN(date.getTime())) return value;
+      
+      // Return the original value for the input (YYYY-MM-DD format)
+      return value;
+    } catch {
+      return value;
+    }
+  };
+
+  const getDisplayDate = () => {
+    if (!value) return null;
+    try {
+      const date = new Date(value + 'T00:00:00');
+      if (isNaN(date.getTime())) return null;
+      
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch {
+      return null;
+    }
+  };
+  
+  return (
+    <div>
+      <label htmlFor={id} className="block text-sm font-medium text-green-700 mb-2">
+        {label} {required && <span className="text-red-500">*</span>}
+      </label>
+      <div 
+        className="relative"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <input
+          type="date"
+          id={id}
+          name={name}
+          value={getDisplayValue()}
+          onChange={onChange}
+          onFocus={() => setIsFocused(true)}
+          onBlur={() => setIsFocused(false)}
+          className={`w-full border-2 rounded-lg px-4 py-3 pr-12 focus:outline-none focus:ring-2 transition-all duration-200 ${
+            error 
+              ? 'border-red-400 bg-red-50 focus:ring-red-300 focus:border-red-500' 
+              : value 
+                ? 'border-green-400 bg-green-50 focus:ring-green-300 focus:border-green-500'
+                : 'border-gray-300 bg-white focus:ring-green-300 focus:border-green-500 hover:border-green-300'
+          } ${isFocused || isHovered ? 'shadow-lg' : 'shadow-sm'}`}
+          required={required}
+        />
+        
+        {/* Calendar Icon with enhanced styling */}
+        <div className={`absolute inset-y-0 right-0 pr-4 flex items-center pointer-events-none transition-colors duration-200 ${
+          isFocused ? 'text-green-600' : error ? 'text-red-500' : value ? 'text-green-500' : 'text-gray-400'
+        }`}>
+          <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
+        </div>
+        
+        {/* Success checkmark for filled dates */}
+        {value && !error && (
+          <div className="absolute inset-y-0 right-10 pr-2 flex items-center pointer-events-none">
+            <svg className="h-5 w-5 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+          </div>
+        )}
+      </div>
+      
+      {/* Display formatted date below input when filled */}
+      {value && !error && getDisplayDate() && (
+        <p className="mt-1 text-sm text-green-600 flex items-center">
+          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+          </svg>
+          Selected: {getDisplayDate()}
+        </p>
+      )}
+      
+      {error && (
+        <p className="mt-2 text-sm text-red-600 flex items-center bg-red-50 px-3 py-2 rounded-md">
+          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+          </svg>
+          {error}
+        </p>
+      )}
+      
+      {!error && !value && placeholder && (
+        <p className="mt-1 text-sm text-gray-500 italic">
+          {placeholder}
+        </p>
+      )}
+    </div>
+  );
+};
+
 interface Tenant {
   id: number;
   name: string;
@@ -76,10 +207,12 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
     setFormData(initialData);
     
     // Initialize date data with proper formatting
-    setDateData({
+    const initialDateData = {
       lease_start: formatDateForInput(tenant.lease_start),
       lease_end: formatDateForInput(tenant.lease_end),
-    });
+    };
+    console.log('Initializing date data:', initialDateData);
+    setDateData(initialDateData);
     
     // Initialize validated fields for existing data
     const initialValidatedFields = new Set<string>();
@@ -110,6 +243,7 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
   });
   const [dateErrors, setDateErrors] = useState<{lease_start?: string; lease_end?: string}>({});
   const [isUpdatingDates, setIsUpdatingDates] = useState(false);
+  const [isFetchingDates, setIsFetchingDates] = useState(false);
   
   // Helper function to format date for display
   const formatDateForDisplay = (date: string | null | undefined) => {
@@ -133,35 +267,64 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
   const formatDateForInput = (date: string | null | undefined) => {
     if (!date) return "";
     
+    console.log('Formatting date for input:', date, 'Type:', typeof date);
+    
     // If it's already in YYYY-MM-DD format, return as is
     if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      console.log('Date is already in YYYY-MM-DD format:', date);
       return date;
     }
     
+    // Handle ISO strings and other date formats by splitting at 'T'
+    // This is more reliable than creating Date objects
+    if (typeof date === 'string' && date.includes('T')) {
+      const formatted = date.split('T')[0];
+      console.log('Formatted ISO date:', formatted);
+      return formatted;
+    }
+    
+    // Fallback: try to create Date object and format
     try {
       const dateObj = new Date(date);
-      if (isNaN(dateObj.getTime())) return "";
+      if (isNaN(dateObj.getTime())) {
+        console.log('Invalid date object:', date);
+        return "";
+      }
       
-      // Convert to YYYY-MM-DD format for date inputs
-      return dateObj.toISOString().split('T')[0];
+      const formatted = dateObj.toISOString().split('T')[0];
+      console.log('Formatted date via Date object:', formatted);
+      return formatted;
     } catch (error) {
+      console.log('Error formatting date:', error);
       return "";
     }
   };
 
-  // Fetch fresh tenant data to prefill dates
+  // Fetch fresh tenant data from API to prefill dates
   const fetchTenantData = async () => {
     try {
+      console.log('Fetching fresh tenant data from API...');
       const response = await fetch(`/api/tenants/${tenant.id}`);
+      
       if (response.ok) {
         const freshTenant = await response.json();
-        setDateData({
-          lease_start: formatDateForInput(freshTenant.lease_start),
-          lease_end: formatDateForInput(freshTenant.lease_end),
-        });
+        console.log('Fresh tenant data received:', freshTenant);
+        
+        // Format dates for input fields (convert from API response to YYYY-MM-DD)
+        const formattedData = {
+          lease_start: freshTenant.lease_start ? formatDateForInput(freshTenant.lease_start) : "",
+          lease_end: freshTenant.lease_end ? formatDateForInput(freshTenant.lease_end) : "",
+        };
+        
+        console.log('Formatted date data:', formattedData);
+        setDateData(formattedData);
+      } else {
+        console.error('Failed to fetch tenant data:', response.status);
+        setDateErrors({ lease_start: "Failed to load current dates" });
       }
     } catch (error) {
       console.error('Error fetching tenant data:', error);
+      setDateErrors({ lease_start: "Network error while loading dates" });
     }
   };
 
@@ -422,11 +585,16 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
   // Handle date editing toggle
   const handleEditDates = async () => {
     if (!isEditingDates) {
-      // Fetch fresh data when starting to edit
+      // Fetch fresh data from API when starting to edit
+      setIsFetchingDates(true);
+      setIsEditingDates(true);
+      setDateErrors({});
       await fetchTenantData();
+      setIsFetchingDates(false);
+    } else {
+      setIsEditingDates(false);
+      setDateErrors({});
     }
-    setIsEditingDates(!isEditingDates);
-    setDateErrors({});
   };
 
   // Handle date update submission
@@ -737,10 +905,18 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                 <button
                   type="button"
                   onClick={handleEditDates}
-                  disabled={isUpdatingDates}
-                  className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 disabled:opacity-50"
+                  disabled={isUpdatingDates || isFetchingDates}
+                  className="px-4 py-2 text-sm bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition duration-200 disabled:opacity-50 flex items-center"
                 >
-                  {isEditingDates ? 'Cancel Edit' : 'Edit Dates'}
+                  {isFetchingDates ? (
+                    <>
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Loading...
+                    </>
+                  ) : isEditingDates ? 'Cancel Edit' : 'Edit Dates'}
                 </button>
               </div>
               
@@ -768,61 +944,30 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
               ) : (
                 // Edit Mode
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Lease Start Date Input */}
-                    <div>
-                      <label htmlFor="lease_start" className="block text-sm font-medium text-green-700 mb-1">
-                        Lease Start Date <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        type="date"
-                        id="lease_start"
-                        name="lease_start"
-                        value={dateData.lease_start}
-                        onChange={handleDateChange}
-                        className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                          dateErrors.lease_start 
-                            ? 'border-red-500 bg-red-50 focus:ring-red-500' 
-                            : 'border-green-300 bg-white focus:ring-green-500'
-                        }`}
-                        required
-                      />
-                      {dateErrors.lease_start && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
-                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                          {dateErrors.lease_start}
-                        </p>
-                      )}
-                    </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Lease Start Date Picker */}
+                    <DatePicker
+                      id="lease_start"
+                      name="lease_start"
+                      value={dateData.lease_start}
+                      onChange={handleDateChange}
+                      placeholder="Click to select lease start date"
+                      required={true}
+                      error={dateErrors.lease_start}
+                      label="Lease Start Date"
+                    />
 
-                    {/* Lease End Date Input */}
-                    <div>
-                      <label htmlFor="lease_end" className="block text-sm font-medium text-green-700 mb-1">
-                        Lease End Date
-                      </label>
-                      <input
-                        type="date"
-                        id="lease_end"
-                        name="lease_end"
-                        value={dateData.lease_end}
-                        onChange={handleDateChange}
-                        className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                          dateErrors.lease_end 
-                            ? 'border-red-500 bg-red-50 focus:ring-red-500' 
-                            : 'border-green-300 bg-white focus:ring-green-500'
-                        }`}
-                      />
-                      {dateErrors.lease_end && (
-                        <p className="mt-1 text-sm text-red-600 flex items-center">
-                          <svg className="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                          {dateErrors.lease_end}
-                        </p>
-                      )}
-                    </div>
+                    {/* Lease End Date Picker */}
+                    <DatePicker
+                      id="lease_end"
+                      name="lease_end"
+                      value={dateData.lease_end}
+                      onChange={handleDateChange}
+                      placeholder="Click to select lease end date (optional)"
+                      required={false}
+                      error={dateErrors.lease_end}
+                      label="Lease End Date"
+                    />
                   </div>
 
                   {/* Date Edit Actions */}
@@ -860,8 +1005,23 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                     </button>
                   </div>
 
-                  <div className="mt-3 p-3 bg-green-100 rounded text-sm text-green-700">
-                    💡 <strong>Tip:</strong> Dates are automatically fetched from the database and prefilled when you click "Edit Dates".
+                  <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex-shrink-0">
+                        <svg className="h-5 w-5 text-green-600 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                      </div>
+                      <div className="text-sm">
+                        <p className="text-green-800 font-medium">Date Picker Tips:</p>
+                        <ul className="mt-1 text-green-700 space-y-1">
+                          <li>• Click the calendar icon or input field to select dates</li>
+                          <li>• Dates are automatically fetched from the database when you start editing</li>
+                          <li>• Lease end date is optional - leave blank for month-to-month leases</li>
+                          <li>• Use keyboard shortcuts: Tab to navigate, Enter to select</li>
+                        </ul>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

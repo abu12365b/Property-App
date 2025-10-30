@@ -62,7 +62,7 @@ const EditPropertyPage: React.FC<{ property: Property }> = ({ property }) => {
     setError(null);
 
     try {
-      // Convert numeric fields to numbers
+      // Convert numeric fields to number
       const dataToSend = {
         ...formData,
         total_units: Number(formData.total_units), // Convert total_units to a number

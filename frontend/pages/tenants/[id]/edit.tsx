@@ -70,19 +70,71 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
     }
   };
 
-  // Simple approach: use the tenant data directly
+  // Ensure dates are properly formatted for HTML date inputs
   console.log('Tenant data received:', tenant);
+  console.log('Lease start raw:', tenant.lease_start);
+  console.log('Lease end raw:', tenant.lease_end);
 
-  // State for form fields - initialize with simple values
+  // Helper function to ensure YYYY-MM-DD format
+  const ensureDateFormat = (dateString: string | null | undefined): string => {
+    if (!dateString) return "";
+    
+    // If it's already YYYY-MM-DD, return as-is
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) {
+      console.log('Date already in correct format:', dateString);
+      return dateString;
+    }
+    
+    // Try to parse and reformat
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) {
+        console.log('Invalid date:', dateString);
+        return "";
+      }
+      
+      const formatted = date.toISOString().split('T')[0];
+      console.log('Reformatted date:', dateString, '->', formatted);
+      return formatted;
+    } catch (error) {
+      console.error('Date formatting error:', error);
+      return "";
+    }
+  };
+
+  // State for form fields with properly formatted dates
   const [formData, setFormData] = useState({
     name: tenant.name,
     email: tenant.email || "",
     phone: tenant.phone || "",
     monthly_rent: tenant.monthly_rent.toString(),
-    lease_start: tenant.lease_start || "",
-    lease_end: tenant.lease_end || "",
+    lease_start: ensureDateFormat(tenant.lease_start),
+    lease_end: ensureDateFormat(tenant.lease_end),
     status: tenant.status,
   });
+
+  console.log('Form data initialized:', formData);
+
+  // Debug: Log whenever formData changes
+  useEffect(() => {
+    console.log('FormData updated:', formData);
+  }, [formData]);
+
+  // Ensure form data is always synced with tenant data
+  useEffect(() => {
+    const initialData = {
+      name: tenant.name,
+      email: tenant.email || "",
+      phone: tenant.phone || "",
+      monthly_rent: tenant.monthly_rent.toString(),
+      lease_start: ensureDateFormat(tenant.lease_start),
+      lease_end: ensureDateFormat(tenant.lease_end),
+      status: tenant.status,
+    };
+    
+    console.log('Syncing form data with tenant data:', initialData);
+    setFormData(initialData);
+  }, [tenant.id]); // Only run when tenant changes
 
   // State for form validation and UI
   const [errors, setErrors] = useState<FormErrors>({});
@@ -162,24 +214,26 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
       newErrors.monthly_rent = "Monthly rent seems too high";
     }
 
-    // Lease start validation
-    if (!formData.lease_start) {
+    // Lease start validation - check both form data and original tenant data
+    const leaseStartValue = formData.lease_start || tenant.lease_start;
+    if (!leaseStartValue) {
       newErrors.lease_start = "Lease start date is required";
     } else {
-      const startDate = new Date(formData.lease_start);
+      const startDate = new Date(leaseStartValue);
       if (isNaN(startDate.getTime())) {
         newErrors.lease_start = "Please enter a valid start date";
       }
     }
 
     // Lease end validation (optional but must be after start if provided)
-    if (formData.lease_end) {
-      const endDate = new Date(formData.lease_end);
-      const startDate = new Date(formData.lease_start);
+    const leaseEndValue = formData.lease_end || tenant.lease_end;
+    if (leaseEndValue) {
+      const endDate = new Date(leaseEndValue);
+      const startDate = leaseStartValue ? new Date(leaseStartValue) : null;
       
       if (isNaN(endDate.getTime())) {
         newErrors.lease_end = "Please enter a valid end date";
-      } else if (formData.lease_start && endDate <= startDate) {
+      } else if (startDate && !isNaN(startDate.getTime()) && endDate <= startDate) {
         newErrors.lease_end = "Lease end date must be after start date";
       }
     }
@@ -198,8 +252,14 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     
-    // Update form data
-    setFormData(prev => ({ ...prev, [name]: value }));
+    console.log(`Field ${name} changed to:`, value);
+    
+    // Update form data - preserve existing values
+    setFormData(prev => {
+      const updated = { ...prev, [name]: value };
+      console.log('Updated form data:', updated);
+      return updated;
+    });
     setIsDirty(true);
     
     // Clear specific field error when user starts typing
@@ -225,12 +285,13 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
     try {
       // Convert numeric fields to numbers and prepare data
       const dataToSend = {
-        ...formData,
-        monthly_rent: parseFloat(formData.monthly_rent),
-        // Ensure empty strings are converted to null for optional fields
+        name: formData.name,
         email: formData.email.trim() || null,
         phone: formData.phone.trim() || null,
+        monthly_rent: parseFloat(formData.monthly_rent),
+        lease_start: formData.lease_start || tenant.lease_start, // Fallback to original if empty
         lease_end: formData.lease_end || null,
+        status: formData.status,
       };
 
       console.log("Form data being sent:", dataToSend);
@@ -394,11 +455,10 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                     Current: {tenant.lease_start ? formatDateForDisplay(tenant.lease_start) : "Not set"}
                   </div>
                   <input
-                    key={`lease_start_${tenant.id}`} // Force re-render with tenant data
                     type="date"
                     id="lease_start"
                     name="lease_start"
-                    defaultValue={tenant.lease_start || ""} // Use defaultValue instead of value
+                    value={formData.lease_start} // Use controlled value
                     onChange={handleChange}
                     className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.lease_start ? 'border-red-500 bg-red-50' : 'border-gray-300'
@@ -419,11 +479,10 @@ const EditTenantPage: React.FC<{ tenant: Tenant }> = ({ tenant }) => {
                     Current: {tenant.lease_end ? formatDateForDisplay(tenant.lease_end) : "Not set"}
                   </div>
                   <input
-                    key={`lease_end_${tenant.id}`} // Force re-render with tenant data
                     type="date"
                     id="lease_end"
                     name="lease_end"
-                    defaultValue={tenant.lease_end || ""} // Use defaultValue instead of value
+                    value={formData.lease_end} // Use controlled value
                     onChange={handleChange}
                     className={`w-full border rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                       errors.lease_end ? 'border-red-500 bg-red-50' : 'border-gray-300'

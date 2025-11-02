@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { PrismaClient } from "@prisma/client";
 import { useRouter } from "next/router";
 import { useState } from "react";
 
@@ -206,7 +205,7 @@ export default TenantsPage;
 
 // Updated getServerSideProps function
 export async function getServerSideProps() {
-  const prisma = new PrismaClient();
+  const { default: prisma } = await import('../../lib/prisma');
 
   // Fetch tenants with their phone number, status, and related property name
   const tenants = await prisma.tenant.findMany({
